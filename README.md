@@ -2,6 +2,8 @@
 
 ## A plugin for recording/exporting the output of Web Audio API nodes
 
+NB - this is a copy of [Matt Diamond's Recorderjs](https://github.com/mattdiamond/Recorderjs), made because it looks like he's not currently maintaining it.
+
 ### Syntax
 #### Constructor
     var rec = new Recorder(source [, config])
