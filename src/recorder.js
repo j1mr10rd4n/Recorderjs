@@ -20,7 +20,7 @@ export class Recorder {
         this.context = source.context;
         this.node = (this.context.createScriptProcessor ||
         this.context.createJavaScriptNode).call(this.context,
-            this.config.bufferLen, this.config.numChannels, this.config.numChannels);
+            this.config.bufferLen, 2, this.config.numChannels);
 
         this.node.onaudioprocess = (e) => {
             if (!this.recording) return;
