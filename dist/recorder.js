@@ -44,7 +44,8 @@ var Recorder = exports.Recorder = function () {
         this.config = {
             bufferLen: 4096,
             numChannels: 2,
-            mimeType: 'audio/wav'
+            mimeType: 'audio/wav',
+            recordingCallback: config.recordingCallback || function () {}
         };
         this.recording = false;
         this.callbacks = {
@@ -60,8 +61,11 @@ var Recorder = exports.Recorder = function () {
             if (!_this.recording) return;
 
             var buffer = [];
+            var channelData;
             for (var channel = 0; channel < _this.config.numChannels; channel++) {
-                buffer.push(e.inputBuffer.getChannelData(channel));
+                channelData = e.inputBuffer.getChannelData(channel);
+                buffer.push(channelData);
+                recordingCallback(channelData);
             }
             _this.worker.postMessage({
                 command: 'record',

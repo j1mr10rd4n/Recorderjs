@@ -4,7 +4,8 @@ export class Recorder {
     config = {
         bufferLen: 4096,
         numChannels: 2,
-        mimeType: 'audio/wav'
+        mimeType: 'audio/wav',
+        recordingCallback: config.recordingCallback || function(){}
     };
 
     recording = false;
@@ -25,8 +26,11 @@ export class Recorder {
             if (!this.recording) return;
 
             var buffer = [];
+            var channelData;
             for (var channel = 0; channel < this.config.numChannels; channel++) {
-                buffer.push(e.inputBuffer.getChannelData(channel));
+                channelData = e.inputBuffer.getChannelData(channel);
+                buffer.push(channelData);
+                recordingCallback(channelData);
             }
             this.worker.postMessage({
                 command: 'record',
