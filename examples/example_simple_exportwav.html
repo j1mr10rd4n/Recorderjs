@@ -16,7 +16,7 @@
   <p>Make sure you are using a recent version of Google Chrome or Mozilla Firefox.</p>
   <p>Also before you enable microphone input either plug in headphones or turn the volume down if you want to avoid ear splitting feedback!</p>
 
-  <button onclick="startRecording(this);" disabled id="record">record</button>
+  <button onclick="startRecording(this);" id="record">record</button>
   <button onclick="stopRecording(this);" disabled>stop</button>
 
   <h2>Recordings</h2>
@@ -50,8 +50,6 @@
     button.disabled = true;
     button.nextElementSibling.disabled = false;
     __log('Recording...');
-
-    document.getElementById('record').disabled = false;
   }
 
   function stopRecording(button) {
