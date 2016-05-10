@@ -6,7 +6,7 @@
   "scripts": {
     "build": "npm run build:lib && npm run build:browserify",
     "build:lib": "babel src/ -d lib/",
-    "build:browserify": "browserify lib/index.js -t babelify --outfile dist/recorder.js -s Recorder",
+    "build:browserify": "browserify lib/index.js -t babelify --outfile dist/media_recorder_adapter.js -s MediaRecorderAdapter",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
