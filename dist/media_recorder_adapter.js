@@ -1,10 +1,84 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.MediaRecorderAdapter = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 "use strict";
 
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () {
+  function defineProperties(target, props) {
+    for (var i = 0; i < props.length; i++) {
+      var descriptor = props[i];descriptor.enumerable = descriptor.enumerable || false;descriptor.configurable = true;if ("value" in descriptor) descriptor.writable = true;Object.defineProperty(target, descriptor.key, descriptor);
+    }
+  }return function (Constructor, protoProps, staticProps) {
+    if (protoProps) defineProperties(Constructor.prototype, protoProps);if (staticProps) defineProperties(Constructor, staticProps);return Constructor;
+  };
+}();
+
+function _classCallCheck(instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
+  }
+}
+
+// adapted from http://upshots.org/javascript/javascript-simple-implementation-of-eventtarget
+
+var EventTargetImpl = function () {
+  function EventTargetImpl() {
+    _classCallCheck(this, EventTargetImpl);
+
+    this.listeners = {};
+  }
+
+  _createClass(EventTargetImpl, [{
+    key: "addEventListener",
+    value: function addEventListener(type, callback) {
+      if (!(type in this.listeners)) {
+        this.listeners[type] = [];
+      }
+      this.listeners[type].push(callback);
+    }
+  }, {
+    key: "removeEventListener",
+    value: function removeEventListener(type, callback) {
+      if (!(type in this.listeners)) {
+        return;
+      }
+      var stack = this.listeners[type];
+      for (var i = 0, l = stack.length; i < l; i++) {
+        if (stack[i] === callback) {
+          stack.splice(i, 1);
+          return this.removeEventListener(type, callback);
+        }
+      }
+    }
+  }, {
+    key: "dispatchEvent",
+    value: function dispatchEvent(event) {
+      if (!(event.type in this.listeners)) {
+        return;
+      }
+      var stack = this.listeners[event.type];
+      for (var i = 0, l = stack.length; i < l; i++) {
+        stack[i].call(this, event);
+      }
+    }
+  }]);
+
+  return EventTargetImpl;
+}();
+
+exports.default = EventTargetImpl;
+
+},{}],2:[function(require,module,exports){
+"use strict";
+
 module.exports = require("./media_recorder_adapter").MediaRecorderAdapter;
 
-},{"./media_recorder_adapter":2}],2:[function(require,module,exports){
-"use strict";
+},{"./media_recorder_adapter":3}],3:[function(require,module,exports){
+'use strict';
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
 Object.defineProperty(exports, "__esModule", {
   value: true
@@ -21,9 +95,13 @@ var _createClass = function () {
   };
 }();
 
-var _recorder = require("./recorder");
+var _recorder = require('./recorder');
 
 var _recorder2 = _interopRequireDefault(_recorder);
+
+var _event_target_impl = require('./event_target_impl');
+
+var _event_target_impl2 = _interopRequireDefault(_event_target_impl);
 
 function _interopRequireDefault(obj) {
   return obj && obj.__esModule ? obj : { default: obj };
@@ -35,59 +113,86 @@ function _classCallCheck(instance, Constructor) {
   }
 }
 
-var MediaRecorderAdapter = exports.MediaRecorderAdapter = function () {
+function _possibleConstructorReturn(self, call) {
+  if (!self) {
+    throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+  }return call && ((typeof call === "undefined" ? "undefined" : _typeof(call)) === "object" || typeof call === "function") ? call : self;
+}
+
+function _inherits(subClass, superClass) {
+  if (typeof superClass !== "function" && superClass !== null) {
+    throw new TypeError("Super expression must either be null or a function, not " + (typeof superClass === "undefined" ? "undefined" : _typeof(superClass)));
+  }subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } });if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+}
+
+var MediaRecorderAdapter = exports.MediaRecorderAdapter = function (_EventTargetImpl) {
+  _inherits(MediaRecorderAdapter, _EventTargetImpl);
+
   function MediaRecorderAdapter(stream, options) {
     _classCallCheck(this, MediaRecorderAdapter);
 
-    this.state = "inactive";
-
+    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(MediaRecorderAdapter).call(this));
     // RecorderJs took an input constructed from the context whereas MediaRecorder
     // simply takes the stream - maybe can record directly from the stream?
     // for now adapt with our own context
+
+    _this.state = "inactive";
+
     var AudioContext = window.AudioContext || window.webkitAudioContext;
     var audioContext = new AudioContext();
     var source = audioContext.createMediaStreamSource(stream);
-    this.recorder = new _recorder2.default(source);
+    _this.recorder = new _recorder2.default(source);
+    return _this;
   }
 
   _createClass(MediaRecorderAdapter, [{
-    key: "start",
+    key: 'start',
     value: function start() {
       this.state = "recording";
       this.recorder.record();
     }
   }, {
-    key: "stop",
+    key: 'stop',
     value: function stop() {
       this.recorder.stop();
       this.state = "inactive";
+      var stopEvent = new Event('stop');
+      this.dispatchEvent(stopEvent);
+      if (this._isFunction(this.onstop)) {
+        this.onstop(stopEvent);
+      }
     }
   }, {
-    key: "clear",
+    key: 'clear',
     value: function clear() {
       this.recorder.clear();
     }
   }, {
-    key: "getBuffer",
+    key: 'getBuffer',
     value: function getBuffer(cb) {
       this.recorder.getBuffer(cb);
     }
   }, {
-    key: "exportWAV",
+    key: 'exportWAV',
     value: function exportWAV(cb, mimeType) {
       this.recorder.exportWAV(cb, mimeType);
     }
+  }, {
+    key: '_isFunction',
+    value: function _isFunction(fn) {
+      return !!(fn && fn instanceof Function);
+    }
   }], [{
-    key: "forceDownload",
+    key: 'forceDownload',
     value: function forceDownload(blob, filename) {
       this.recorder.forceDownload(blob, filename);
     }
   }]);
 
   return MediaRecorderAdapter;
-}();
+}(_event_target_impl2.default);
 
-},{"./recorder":3}],3:[function(require,module,exports){
+},{"./event_target_impl":1,"./recorder":4}],4:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -387,11 +492,11 @@ var Recorder = exports.Recorder = function () {
 
 exports.default = Recorder;
 
-},{"inline-worker":4}],4:[function(require,module,exports){
+},{"inline-worker":5}],5:[function(require,module,exports){
 "use strict";
 
 module.exports = require("./inline-worker");
-},{"./inline-worker":5}],5:[function(require,module,exports){
+},{"./inline-worker":6}],6:[function(require,module,exports){
 (function (global){
 "use strict";
 
@@ -443,5 +548,5 @@ var InlineWorker = (function () {
 
 module.exports = InlineWorker;
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}]},{},[1])(1)
+},{}]},{},[2])(2)
 });
