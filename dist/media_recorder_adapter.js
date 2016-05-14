@@ -156,10 +156,33 @@ var MediaRecorderAdapter = exports.MediaRecorderAdapter = function (_EventTarget
     value: function stop() {
       this.recorder.stop();
       this.state = "inactive";
-      var stopEvent = new Event('stop');
-      this.dispatchEvent(stopEvent);
-      if (this._isFunction(this.onstop)) {
-        this.onstop(stopEvent);
+      var mra = this;
+      new Promise(function (resolve, reject) {
+        mra.recorder.exportWAV(function (blob) {
+          mra.recorder.clear();
+          resolve(blob);
+        });
+      }).then(function (blob) {
+        dispatchDataAvailableEvent(blob);
+      }).catch(function (err) {
+        console.log(err);
+      });
+      dispatchStopEvent();
+
+      function dispatchStopEvent() {
+        var stopEvent = new Event('stop');
+        mra.dispatchEvent(stopEvent);
+        if (mra._isFunction(mra.onstop)) {
+          mra.onstop(stopEvent);
+        }
+      }
+
+      function dispatchDataAvailableEvent(blob) {
+        var dataAvailableEvent = new BlobEvent('dataavailable', { data: blob });
+        mra.dispatchEvent(dataAvailableEvent);
+        if (mra._isFunction(mra.ondataavailable)) {
+          mra.ondataavailable(dataAvailableEvent);
+        }
       }
     }
   }, {
@@ -303,8 +326,9 @@ var Recorder = exports.Recorder = function () {
                 for (var channel = 0; channel < numChannels; channel++) {
                     recBuffers[channel].push(inputBuffer[channel]);
                 }
-                console.log("INPUTBUFFER PEEK " + inputBuffer[0][0]);
-                console.log("RECLENGTH IS NOW " + inputBuffer[0] + recLength);
+                //console.log('new buffer added : length now ' + recBuffers[0].length);
+                //console.log("INPUTBUFFER PEEK " + inputBuffer[0][0]);
+                //console.log("RECLENGTH IS NOW " + inputBuffer[0] + recLength);
                 recLength += inputBuffer[0].length;
             }
 
@@ -328,6 +352,10 @@ var Recorder = exports.Recorder = function () {
             function getBuffer() {
                 var buffers = [];
                 for (var channel = 0; channel < numChannels; channel++) {
+                    //console.log("getBuffer channel" + channel);
+                    //console.log("recBuffers[" + channel +"].length:" + recBuffers[channel].length);
+                    //console.log("recLength: " + recLength);
+                    //console.log("mergeBuffers result length: " + mergeBuffers(recBuffers[channel], recLength).length);
                     buffers.push(mergeBuffers(recBuffers[channel], recLength));
                 }
                 self.postMessage({ command: 'getBuffer', data: buffers });
@@ -349,6 +377,8 @@ var Recorder = exports.Recorder = function () {
                 var result = new Float32Array(recLength);
                 var offset = 0;
                 for (var i = 0; i < recBuffers.length; i++) {
+                    //console.log(' mergeBuffers i' + i);
+                    //console.log("offset: " + offset);
                     result.set(recBuffers[i], offset);
                     offset += recBuffers[i].length;
                 }

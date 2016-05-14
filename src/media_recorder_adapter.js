@@ -24,10 +24,33 @@ export class MediaRecorderAdapter extends EventTargetImpl {
   stop() {
     this.recorder.stop();
     this.state = "inactive";
-    var stopEvent = new Event('stop');
-    this.dispatchEvent(stopEvent);
-    if(this._isFunction(this.onstop)) {
-      this.onstop(stopEvent);
+    let mra = this;
+    new Promise(function(resolve, reject) {
+      mra.recorder.exportWAV(function(blob) {
+        mra.recorder.clear();
+        resolve(blob);
+      });
+    }).then(function(blob) {
+      dispatchDataAvailableEvent(blob);
+    }).catch(function(err) {
+      console.log(err);
+    });
+    dispatchStopEvent();
+
+    function dispatchStopEvent() {
+      let stopEvent = new Event('stop');
+      mra.dispatchEvent(stopEvent);
+      if(mra._isFunction(mra.onstop)) {
+        mra.onstop(stopEvent);
+      }
+    }
+
+    function dispatchDataAvailableEvent(blob) {
+      let dataAvailableEvent = new BlobEvent('dataavailable', {data: blob});
+      mra.dispatchEvent(dataAvailableEvent);
+      if(mra._isFunction(mra.ondataavailable)) {
+        mra.ondataavailable(dataAvailableEvent);
+      }
     }
   }
 
